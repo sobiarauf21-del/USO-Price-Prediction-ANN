@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USO Price Predictor — ANN Powered</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-card: rgba(15, 23, 42, 0.8);
+            --bg-input: rgba(30, 41, 59, 0.6);
+            --accent: #f59e0b;
+            --accent-light: #fbbf24;
+            --accent-glow: rgba(245, 158, 11, 0.3);
+            --success: #22c55e;
+            --success-glow: rgba(34, 197, 94, 0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(245, 158, 11, 0.15);
+            --border-hover: rgba(245, 158, 11, 0.4);
+            --gradient-1: linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #dc2626 100%);
+            --gradient-2: linear-gradient(135deg, #0f172a 0%, #1c1917 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-mesh {
+            position: fixed; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(245, 158, 11, 0.07) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(239, 68, 68, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(220, 38, 38, 0.04) 0%, transparent 50%);
+        }
+
+        .floating-orb {
+            position: fixed; border-radius: 50%; filter: blur(80px);
+            opacity: 0.4; animation: float 20s ease-in-out infinite; z-index: 0;
+        }
+        .orb-1 { width: 400px; height: 400px; background: rgba(245, 158, 11, 0.12); top: -100px; left: -100px; animation-delay: 0s; }
+        .orb-2 { width: 300px; height: 300px; background: rgba(239, 68, 68, 0.08); bottom: -50px; right: -50px; animation-delay: -7s; }
+        .orb-3 { width: 250px; height: 250px; background: rgba(34, 197, 94, 0.06); top: 50%; left: 50%; animation-delay: -14s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -30px) scale(1.05); }
+            50% { transform: translate(-20px, 40px) scale(0.95); }
+            75% { transform: translate(30px, 20px) scale(1.02); }
+        }
+
+        .container { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        .header { text-align: center; margin-bottom: 2.5rem; }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--accent-glow); border: 1px solid var(--border);
+            border-radius: 50px; padding: 6px 16px; font-size: 0.75rem;
+            font-weight: 600; color: var(--accent-light); text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 1rem;
+            animation: pulse-border 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: var(--border); }
+            50% { border-color: var(--border-hover); }
+        }
+
+        .badge .dot {
+            width: 6px; height: 6px; background: var(--success);
+            border-radius: 50%; animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        h1 {
+            font-size: 2.5rem; font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; margin-bottom: 0.5rem; line-height: 1.2;
+        }
+
+        .subtitle { color: var(--text-secondary); font-size: 1rem; max-width: 620px; margin: 0 auto; }
+
+        .info-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+
+        .info-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 1.25rem; text-align: center;
+            backdrop-filter: blur(20px); transition: all 0.3s ease;
+        }
+        .info-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(245, 158, 11, 0.1); }
+        .info-card .icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .info-card .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem; }
+        .info-card .value { font-size: 1.25rem; font-weight: 700; color: var(--accent-light); }
+
+        .main-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 24px; padding: 2.5rem; backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-title {
+            font-size: 1.1rem; font-weight: 600; color: var(--text-primary);
+            margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px;
+        }
+        .section-title::before {
+            content: ''; width: 4px; height: 20px;
+            background: var(--gradient-1); border-radius: 2px;
+        }
+
+        .group-label {
+            font-size: 0.7rem; font-weight: 600; color: var(--accent-light);
+            text-transform: uppercase; letter-spacing: 1.5px;
+            margin: 1.5rem 0 0.75rem;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; margin-bottom: 1rem; }
+
+        .form-group { position: relative; }
+        .form-group label {
+            display: block; font-size: 0.78rem; font-weight: 500;
+            color: var(--text-secondary); margin-bottom: 6px; transition: color 0.3s;
+        }
+        .form-group:focus-within label { color: var(--accent-light); }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px 16px; background: var(--bg-input);
+            border: 1px solid var(--border); border-radius: 12px;
+            color: var(--text-primary); font-family: 'Inter', sans-serif;
+            font-size: 0.95rem; font-weight: 500; transition: all 0.3s ease; outline: none;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
+            background: rgba(30, 41, 59, 0.9);
+        }
+        .form-group input::placeholder { color: var(--text-muted); }
+
+        .predict-btn {
+            width: 100%; padding: 16px; background: var(--gradient-1);
+            border: none; border-radius: 14px; color: white;
+            font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease;
+            position: relative; overflow: hidden; margin-top: 1.5rem;
+        }
+        .predict-btn::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+            transform: translateX(-100%); transition: transform 0.5s;
+        }
+        .predict-btn:hover::before { transform: translateX(100%); }
+        .predict-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(245, 158, 11, 0.4); }
+        .predict-btn:active { transform: translateY(0); }
+        .predict-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .predict-btn .spinner {
+            display: none; width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white;
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .predict-btn.loading .spinner { display: inline-block; }
+        .predict-btn.loading .btn-text { display: none; }
+        .predict-btn.loading .btn-loading-text { display: inline; }
+        .btn-loading-text { display: none; }
+
+        .result-section { margin-top: 2rem; display: none; animation: slideUp 0.5s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .result-card {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 20px;
+            padding: 2rem; text-align: center;
+        }
+        .result-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.5rem; }
+        .result-value {
+            font-size: 3.5rem; font-weight: 800;
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; line-height: 1.2;
+        }
+        .result-unit { font-size: 1rem; color: var(--text-secondary); margin-top: 0.25rem; }
+        .result-meta {
+            display: flex; justify-content: center; gap: 2rem;
+            margin-top: 1.25rem; padding-top: 1.25rem;
+            border-top: 1px solid rgba(34, 197, 94, 0.15);
+        }
+        .meta-item { text-align: center; }
+        .meta-item .meta-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .meta-item .meta-value { font-size: 1.1rem; font-weight: 600; color: var(--accent-light); }
+
+        .error-card {
+            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px; padding: 1rem 1.5rem; color: #fca5a5; margin-top: 1.5rem; display: none;
+        }
+
+        .arch-section { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+        .arch-visual { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+        .layer-node {
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 16px; text-align: center;
+            font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); transition: all 0.3s;
+        }
+        .layer-node:hover { border-color: var(--accent); color: var(--accent-light); transform: scale(1.05); }
+        .layer-node .layer-size { font-size: 1rem; color: var(--accent-light); font-weight: 700; }
+        .arrow { color: var(--text-muted); font-size: 1.2rem; }
+
+        .footer { text-align: center; margin-top: 2rem; color: var(--text-muted); font-size: 0.75rem; }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            h1 { font-size: 1.8rem; }
+            .form-grid { grid-template-columns: 1fr; }
+            .info-row { grid-template-columns: 1fr; }
+            .main-card { padding: 1.5rem; }
+            .result-value { font-size: 2.5rem; }
+            .result-meta { flex-direction: column; gap: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-mesh"></div>
+    <div class="floating-orb orb-1"></div>
+    <div class="floating-orb orb-2"></div>
+    <div class="floating-orb orb-3"></div>
+
+    <div class="container">
+        <header class="header">
+            <div class="badge"><span class="dot"></span> Deep Learning Model Active</div>
+            <h1>USO Price Predictor</h1>
+            <p class="subtitle">ANN-powered oil ETF price forecasting using PyTorch with Adam optimizer, backpropagation &amp; 24-feature multi-layer neural network</p>
+        </header>
+
+        <div class="info-row">
+            <div class="info-card">
+                <div class="icon">🧠</div>
+                <div class="label">Architecture</div>
+                <div class="value">4-Layer ANN</div>
+            </div>
+            <div class="info-card">
+                <div class="icon">⚡</div>
+                <div class="label">Optimizer</div>
+                <div class="value">Adam</div>
+            </div>
+            <div class="info-card">
+                <div class="icon">📊</div>
+                <div class="label">Training Data</div>
+                <div class="value">1,718 Rows</div>
+            </div>
+        </div>
+
+        <div class="main-card">
+            <div class="section-title">Input Features</div>
+
+            <form id="predictForm">
+
+                <div class="group-label">🥇 Gold ETF (IAU)</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>High Price</label>
+                        <input type="number" id="high" placeholder="e.g. 127.50" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Low Price</label>
+                        <input type="number" id="low" placeholder="e.g. 125.80" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Open Price</label>
+                        <input type="number" id="open" placeholder="e.g. 126.40" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Volume</label>
+                        <input type="number" id="volume" placeholder="e.g. 8500000" step="any" required>
+                    </div>
+                </div>
+
+                <div class="group-label">📈 Stock Indices</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>S&amp;P 500 Open</label>
+                        <input type="number" id="sp_open" placeholder="e.g. 204.50" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>S&amp;P 500 Close</label>
+                        <input type="number" id="sp_close" placeholder="e.g. 205.00" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>S&amp;P 500 High</label>
+                        <input type="number" id="sp_high" placeholder="e.g. 206.20" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Dow Jones Open</label>
+                        <input type="number" id="dj_open" placeholder="e.g. 18160" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Dow Jones Close</label>
+                        <input type="number" id="dj_close" placeholder="e.g. 18200" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Emerging Markets Close (EG)</label>
+                        <input type="number" id="eg_close" placeholder="e.g. 28.20" step="any" required>
+                    </div>
+                </div>
+
+                <div class="group-label">🌍 Currencies &amp; Commodities</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Euro / USD Price</label>
+                        <input type="number" id="eu_price" placeholder="e.g. 1.21" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Oil Futures Price (OF)</label>
+                        <input type="number" id="of_price" placeholder="e.g. 77.50" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Oil Spot Price (OS)</label>
+                        <input type="number" id="os_price" placeholder="e.g. 70.15" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Silver Futures Price (SF)</label>
+                        <input type="number" id="sf_price" placeholder="e.g. 43285" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Platinum Price (PLT)</label>
+                        <input type="number" id="plt_price" placeholder="e.g. 1183" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Palladium Price (PLD)</label>
+                        <input type="number" id="pld_price" placeholder="e.g. 766" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Rhodium Price (RHO)</label>
+                        <input type="number" id="rho_price" placeholder="e.g. 1130" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>USD Index Price (USDI)</label>
+                        <input type="number" id="usdi_price" placeholder="e.g. 89.80" step="any" required>
+                    </div>
+                </div>
+
+                <div class="group-label">⛏️ GDX (Gold Miners ETF)</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>GDX Close</label>
+                        <input type="number" id="gdx_close" placeholder="e.g. 26.70" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>GDX Volume</label>
+                        <input type="number" id="gdx_volume" placeholder="e.g. 43500000" step="any" required>
+                    </div>
+                </div>
+
+                <div class="group-label">🛢️ USO (Oil ETF) — Other Fields</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>USO Open</label>
+                        <input type="number" id="uso_open" placeholder="e.g. 22.10" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>USO High</label>
+                        <input type="number" id="uso_high" placeholder="e.g. 22.50" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>USO Low</label>
+                        <input type="number" id="uso_low" placeholder="e.g. 21.90" step="any" required>
+                    </div>
+                    <div class="form-group">
+                        <label>USO Volume</label>
+                        <input type="number" id="uso_volume" placeholder="e.g. 19000000" step="any" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="predict-btn" id="predictBtn">
+                    <span class="spinner"></span>
+                    <span class="btn-text">🚀 Predict USO Close Price</span>
+                    <span class="btn-loading-text">Analyzing with Neural Network...</span>
+                </button>
+            </form>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-card">
+                    <div class="result-label">Predicted USO Close Price</div>
+                    <div class="result-value" id="resultValue">—</div>
+                    <div class="result-unit">USD per share</div>
+                    <div class="result-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">Model R²</div>
+                            <div class="meta-value" id="metaR2">—</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">RMSE</div>
+                            <div class="meta-value" id="metaRMSE">—</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Model Type</div>
+                            <div class="meta-value">ANN (PyTorch)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="error-card" id="errorCard"></div>
+
+            <div class="arch-section">
+                <div class="section-title">Neural Network Architecture</div>
+                <div class="arch-visual">
+                    <div class="layer-node">
+                        <div class="layer-size">24</div>
+                        Input
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="layer-node">
+                        <div class="layer-size">128</div>
+                        ReLU + Drop
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="layer-node">
+                        <div class="layer-size">64</div>
+                        ReLU + Drop
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="layer-node">
+                        <div class="layer-size">32</div>
+                        ReLU
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="layer-node">
+                        <div class="layer-size">1</div>
+                        Output
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Built with PyTorch · Adam Optimizer · Backpropagation · ANN</p>
+            <p style="margin-top: 4px;">Deep Learning Lab Final Project</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('predictBtn');
+            const resultSection = document.getElementById('resultSection');
+            const errorCard = document.getElementById('errorCard');
+
+            btn.classList.add('loading');
+            btn.disabled = true;
+            errorCard.style.display = 'none';
+
+            const payload = {
+                high: document.getElementById('high').value,
+                low: document.getElementById('low').value,
+                open: document.getElementById('open').value,
+                volume: document.getElementById('volume').value,
+                sp_open: document.getElementById('sp_open').value,
+                sp_close: document.getElementById('sp_close').value,
+                sp_high: document.getElementById('sp_high').value,
+                dj_open: document.getElementById('dj_open').value,
+                dj_close: document.getElementById('dj_close').value,
+                eg_close: document.getElementById('eg_close').value,
+                eu_price: document.getElementById('eu_price').value,
+                of_price: document.getElementById('of_price').value,
+                os_price: document.getElementById('os_price').value,
+                sf_price: document.getElementById('sf_price').value,
+                plt_price: document.getElementById('plt_price').value,
+                pld_price: document.getElementById('pld_price').value,
+                rho_price: document.getElementById('rho_price').value,
+                usdi_price: document.getElementById('usdi_price').value,
+                gdx_close: document.getElementById('gdx_close').value,
+                gdx_volume: document.getElementById('gdx_volume').value,
+                uso_open: document.getElementById('uso_open').value,
+                uso_high: document.getElementById('uso_high').value,
+                uso_low: document.getElementById('uso_low').value,
+                uso_volume: document.getElementById('uso_volume').value
+            };
+
+            try {
+                const res = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (data.error) {
+                    errorCard.textContent = '⚠ ' + data.error;
+                    errorCard.style.display = 'block';
+                    resultSection.style.display = 'none';
+                } else {
+                    document.getElementById('resultValue').textContent = '$' + data.predicted_uso_close;
+                    document.getElementById('metaR2').textContent = data.model_r2;
+                    document.getElementById('metaRMSE').textContent = data.model_rmse;
+                    resultSection.style.display = 'block';
+                    resultSection.style.animation = 'none';
+                    requestAnimationFrame(() => { resultSection.style.animation = 'slideUp 0.5s ease'; });
+                }
+            } catch (err) {
+                errorCard.textContent = '⚠ Connection error. Make sure app.py is running.';
+                errorCard.style.display = 'block';
+                resultSection.style.display = 'none';
+            }
+
+            btn.classList.remove('loading');
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>
