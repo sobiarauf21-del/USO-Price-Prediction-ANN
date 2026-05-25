@@ -9,11 +9,11 @@ This project applies **Artificial Neural Networks (ANN)** to predict the daily c
 
 The motivation behind this project was to compare a traditional ML approach (Linear Regression with just 3 features, R² = 0.74) against a deep learning model trained on richer features — and see how much improvement ANN actually brings.
 
-> 🎓 Deep Learning Lab Final Project — 6th Semester
+>  Deep Learning Lab Final Project — 6th Semester
 
 ---
 
-## 💡 What This Project Covers
+##  What This Project Covers
 
 - Building and training a multi-layer ANN from scratch using PyTorch
 - Understanding **forward pass** and **backpropagation** in practice
@@ -24,7 +24,7 @@ The motivation behind this project was to compare a traditional ML approach (Lin
 
 ---
 
-## 📂 Dataset
+##  Dataset
 
 **`oilprice.csv`** — 1,718 rows, 81 columns of daily financial market data
 
@@ -41,11 +41,11 @@ The 24 features used for training are grouped below:
 | Precious Metals | SF_Price, PLT_Price, PLD_Price, RHO_PRICE |
 | Gold Miners ETF | GDX_Close, GDX_Volume |
 | USO other fields | USO_Open, USO_High, USO_Low, USO_Volume |
-| 🎯 Target | **USO_Close** |
+|  Target | **USO_Close** |
 
 ---
 
-## 🏗️ Network Architecture
+## Network Architecture
 
 A 4-layer fully connected ANN with dropout regularization:
 
@@ -61,7 +61,7 @@ Trained using **MSE loss** and the **Adam optimizer** (lr = 0.001) for 50 epochs
 
 ---
 
-## 📊 Results
+##  Results
 
 ### Regression (USO Close Price)
 
@@ -112,7 +112,7 @@ Open `project.ipynb`, run cells 1–8 to train, then cell 9 to launch the web ap
 
 ---
 
-## 📁 Files
+##  Files
 
 ```
 project.ipynb        ← main notebook (training + deployment)
@@ -125,7 +125,7 @@ requirements.txt     ← dependencies
 
 ---
 
-## 🛠️ Built With
+##  Built With
 
 PyTorch · Scikit-learn · Flask · Pandas · NumPy · Matplotlib
 
