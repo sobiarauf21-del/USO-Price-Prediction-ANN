@@ -68,8 +68,8 @@ Trained using **MSE loss** and the **Adam optimizer** (lr = 0.001) for 50 epochs
 | | Linear Regression (3 features) | ANN — Adam (24 features) |
 |---|---|---|
 | R² Score | 0.7405 | **~0.97+** |
-| RMSE | — | **~0.60** |
-| MAE | — | **~0.40** |
+| RMSE | 6.51 | **~0.60** |
+| MAE | 5.05 | **~0.40** |
 
 ### Optimizer Comparison
 
